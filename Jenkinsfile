@@ -21,35 +21,37 @@ pipeline {
     }
 
     stage('Run JMeter (Docker)') {
-      steps {
-        sh """
-          set -euo pipefail
+  steps {
+    sh """
+      set -euo pipefail
 
-          out='${env.REPORT_ROOT}'
-          mkdir -p "\$out"
+      out='${env.REPORT_ROOT}'
+      mkdir -p "\$out"
 
-          cid=\$(docker create --user 0:0 \
-            -v "\$PWD:/work" -w /work \
-            justb4/jmeter:5.5 \
-            -n -t Jmeter_orig/Test.jmx \
-            -l /tmp/results.jtl \
-            -e -o /tmp/HtmlReport \
-            -JbaseURL='${params.HOST}' \
-            -Jusers='${params.USERS}' \
-            -Jramp='${params.RAMP}' \
-            -Jduration='${params.DURATION}'
-          )
+      cid=\$(docker create --user 0:0 justb4/jmeter:5.5 sleep 600)
 
-          docker start -a "\$cid"
+      docker cp Jmeter_orig/Test.jmx "\$cid:/Test.jmx"
+      docker cp Jmeter_orig/testdata "\$cid:/testdata" || true
 
-          docker cp "\$cid:/tmp/results.jtl" "\$out/results.jtl"
-          docker cp "\$cid:/tmp/HtmlReport" "\$out/HtmlReport"
+      docker start "\$cid"
 
-          docker rm "\$cid" >/dev/null
-        """
-      }
-    }
+      docker exec "\$cid" jmeter \
+        -n -t /Test.jmx \
+        -l /tmp/results.jtl \
+        -e -o /tmp/HtmlReport \
+        -JbaseURL='${params.HOST}' \
+        -Jusers='${params.USERS}' \
+        -Jramp='${params.RAMP}' \
+        -Jduration='${params.DURATION}'
+
+      docker cp "\$cid:/tmp/results.jtl" "\$out/results.jtl"
+      docker cp "\$cid:/tmp/HtmlReport" "\$out/HtmlReport"
+
+      docker rm -f "\$cid" >/dev/null
+    """
   }
+}
+
 
   post {
     always {
