@@ -1,0 +1,16 @@
+{
+  "name": "lighthouse",
+  "version": "1.0.0",
+  "main": "Placing-an-order-for-random-table.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "lighthouse": "^13.0.1",
+    "puppeteer": "^24.36.0"
+  }
+}

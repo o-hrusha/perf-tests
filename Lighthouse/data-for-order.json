@@ -1,0 +1,47 @@
+[
+  {
+    "name": "Test User 1",
+    "address": "Test street 1",
+    "postal": "01001",
+    "city": "Kyiv",
+    "country": "UA",
+    "phone": "+380991112233",
+    "email": "test.user1@example.com"
+  },
+  {
+    "name": "Test User 2",
+    "address": "Second street 5",
+    "postal": "02002",
+    "city": "Lviv",
+    "country": "UA",
+    "phone": "+380992223344",
+    "email": "test.user2@example.com"
+  },
+  {
+    "name": "Test User 3",
+    "address": "Third street 7",
+    "postal": "03003",
+    "city": "Odesa",
+    "country": "UA",
+    "phone": "+380993334455",
+    "email": "test.user3@example.com"
+  },
+  {
+    "name": "Test User 4",
+    "address": "Fourth street 9",
+    "postal": "04004",
+    "city": "Dnipro",
+    "country": "UA",
+    "phone": "+380994445566",
+    "email": "test.user4@example.com"
+  },
+  {
+    "name": "Test User 5",
+    "address": "Fifth street 11",
+    "postal": "05005",
+    "city": "Kharkiv",
+    "country": "UA",
+    "phone": "+380995556677",
+    "email": "test.user5@example.com"
+  }
+]
