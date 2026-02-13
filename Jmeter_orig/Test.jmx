@@ -87,7 +87,7 @@
         <stringProp name="ThreadGroup.num_threads">${S01_v_users}</stringProp>
         <stringProp name="ThreadGroup.ramp_time">${S01_ramp_up}</stringProp>
         <boolProp name="ThreadGroup.scheduler">true</boolProp>
-        <stringProp name="ThreadGroup.duration">900</stringProp>
+        <stringProp name="ThreadGroup.duration">${S01_duration}</stringProp>
         <stringProp name="ThreadGroup.delay">0</stringProp>
         <boolProp name="ThreadGroup.same_user_on_next_iteration">true</boolProp>
       </ThreadGroup>
@@ -96,7 +96,7 @@
           <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments" enabled="true">
             <collectionProp name="Arguments.arguments"/>
           </elementProp>
-          <stringProp name="HTTPSampler.domain">${S01_host_name}</stringProp>
+          <stringProp name="HTTPSampler.domain">${S01_host_name} </stringProp>
           <stringProp name="HTTPSampler.port"></stringProp>
           <stringProp name="HTTPSampler.protocol">http</stringProp>
           <stringProp name="HTTPSampler.contentEncoding"></stringProp>
@@ -110,22 +110,27 @@
           <collectionProp name="Arguments.arguments">
             <elementProp name="S01_host_name" elementType="Argument">
               <stringProp name="Argument.name">S01_host_name</stringProp>
-              <stringProp name="Argument.value">localhost</stringProp>
+              <stringProp name="Argument.value">${__P(S01_host_name,localhost)} </stringProp>
               <stringProp name="Argument.metadata">=</stringProp>
             </elementProp>
             <elementProp name="S01_v_users" elementType="Argument">
               <stringProp name="Argument.name">S01_v_users</stringProp>
-              <stringProp name="Argument.value">${__P(S01_v_users, 20)}</stringProp>
+              <stringProp name="Argument.value">${__P(S01_v_users,20)} </stringProp>
               <stringProp name="Argument.metadata">=</stringProp>
             </elementProp>
             <elementProp name="S01_ramp_up" elementType="Argument">
               <stringProp name="Argument.name">S01_ramp_up</stringProp>
-              <stringProp name="Argument.value">${__P(S01_ramp_up,180)}</stringProp>
+              <stringProp name="Argument.value">${__P(S01_ramp_up,60)} </stringProp>
               <stringProp name="Argument.metadata">=</stringProp>
             </elementProp>
             <elementProp name="S01_loop_count" elementType="Argument">
               <stringProp name="Argument.name">S01_loop_count</stringProp>
               <stringProp name="Argument.value">${__P(S01_loop_count, 5)}</stringProp>
+              <stringProp name="Argument.metadata">=</stringProp>
+            </elementProp>
+            <elementProp name="S01_duration" elementType="Argument">
+              <stringProp name="Argument.name">S01_duration</stringProp>
+              <stringProp name="Argument.value">${__P(S01_duration,120)}</stringProp>
               <stringProp name="Argument.metadata">=</stringProp>
             </elementProp>
           </collectionProp>
