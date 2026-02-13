@@ -20,24 +20,36 @@ pipeline {
       }
     }
 
-    stage('Run JMeter (Docker)') {
-      steps {
-        sh """
-          set -euo pipefail
-          docker run --rm --user 0:0 \
-            -v "\$PWD:/work" -w /work \
-            justb4/jmeter:5.5 \
-            -n -t Jmeter_orig/Test.jmx \
-            -l "${env.REPORT_ROOT}/results.jtl" \
-            -e -o "${env.REPORT_ROOT}/HtmlReport" \
-            -JbaseURL='${params.HOST}' \
-            -Jusers='${params.USERS}' \
-            -Jramp='${params.RAMP}' \
-            -Jduration='${params.DURATION}'
-        """
-      }
-    }
+stage('Run JMeter (Docker)') {
+  steps {
+    sh """
+      set -euo pipefail
+
+      out='${env.REPORT_ROOT}'
+      mkdir -p "\$out"
+
+      cid=\$(docker create --user 0:0 \
+        -v "\$PWD:/work" -w /work \
+        justb4/jmeter:5.5 \
+        -n -t Jmeter_orig/Test.jmx \
+        -l /tmp/results.jtl \
+        -e -o /tmp/HtmlReport \
+        -JbaseURL='${params.HOST}' \
+        -Jusers='${params.USERS}' \
+        -Jramp='${params.RAMP}' \
+        -Jduration='${params.DURATION}'
+      )
+
+      docker start -a "\$cid"
+
+      docker cp "\$cid:/tmp/results.jtl" "\$out/results.jtl"
+      docker cp "\$cid:/tmp/HtmlReport" "\$out/HtmlReport"
+
+      docker rm "\$cid" >/dev/null
+    """
   }
+}
+
 
   post {
     always {
