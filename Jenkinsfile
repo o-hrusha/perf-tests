@@ -24,7 +24,7 @@ pipeline {
       steps {
         sh """
           set -euo pipefail
-          docker run --rm \
+          docker run --rm --user 0:0 \
             -v "\$PWD:/work" -w /work \
             justb4/jmeter:5.5 \
             -n -t Jmeter_orig/Test.jmx \
