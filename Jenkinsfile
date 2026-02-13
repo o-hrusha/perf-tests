@@ -88,16 +88,21 @@ pipeline {
             mkdir "%OUT%"
             mkdir "%OUT%\\report"
 
+            rem normalize HOST: remove http:// or https:// for JMeter Server Name
+            set "JM_HOST=${params.HOST}"
+            set "JM_HOST=%JM_HOST:http://=%"
+            set "JM_HOST=%JM_HOST:https://=%"
+
             rem IMPORTANT: run from workspace so relative paths in Test.jmx / testdata work
             "%JMETER_HOME%\\bin\\jmeter.bat" ^
               -n ^
               -t "%WORKSPACE%\\Jmeter_orig\\Test.jmx" ^
               -l "%WORKSPACE%\\%OUT%\\results.jtl" ^
               -e -o "%WORKSPACE%\\%OUT%\\report" ^
-              -JbaseURL="${params.HOST}" ^
-              -Jusers="${params.USERS}" ^
-              -Jramp="${params.RAMP}" ^
-              -Jduration="${params.DURATION}"
+              -JS01_host_name="%JM_HOST%" ^
+              -JS01_v_users="${params.USERS}" ^
+              -JS01_ramp_up="${params.RAMP}" ^
+              -JS01_duration="${params.DURATION}"
           """
         }
       }
