@@ -28,7 +28,7 @@ pipeline {
           out='${env.REPORT_ROOT}'
           mkdir -p "\$out"
 
-          cid=\$(docker create --user 0:0 justb4/jmeter:5.5 sleep 600)
+          cid=$(docker create --user 0:0 --entrypoint="" justb4/jmeter:5.5 sleep 600)
 
           docker cp Jmeter_orig/Test.jmx "\$cid:/Test.jmx"
           docker cp Jmeter_orig/testdata "\$cid:/testdata" || true
