@@ -2,62 +2,130 @@ pipeline {
   agent any
 
   parameters {
-    string(name: 'HOST', defaultValue: 'http://localhost', description: 'Base URL')
-    string(name: 'USERS', defaultValue: '20', description: 'Virtual users')
-    string(name: 'RAMP', defaultValue: '30', description: 'Ramp-up seconds')
-    string(name: 'DURATION', defaultValue: '120', description: 'Duration seconds')
+    string(name: 'HOST', defaultValue: 'http://localhost', description: 'Base URL for all tools')
+    string(name: 'USERS', defaultValue: '10', description: 'Virtual users for Gatling and JMeter')
+    string(name: 'RAMP', defaultValue: '30', description: 'Ramp-up duration (seconds)')
+    string(name: 'DURATION', defaultValue: '60', description: 'Steady-state duration (seconds)')
+    booleanParam(name: 'RUN_GATLING', defaultValue: true, description: 'Execute Gatling stage')
+    booleanParam(name: 'RUN_JMETER', defaultValue: true, description: 'Execute JMeter stage')
+    booleanParam(name: 'RUN_LIGHTHOUSE', defaultValue: true, description: 'Execute Lighthouse stage')
   }
 
   environment {
-    REPORT_ROOT = "reports/build-${BUILD_NUMBER}/jmeter"
+    JMETER_HOME = 'C:\\apache-jmeter-5.5'
+    REPORT_ROOT = "reports\\build-${BUILD_NUMBER}"
   }
 
   stages {
     stage('Prepare Reports') {
       steps {
-        sh '''
-          set -euo pipefail
-          rm -rf "reports/build-${BUILD_NUMBER}"
-          mkdir -p "${REPORT_ROOT}"
-        '''
+        bat """
+          if exist "%REPORT_ROOT%" rmdir /s /q "%REPORT_ROOT%"
+          mkdir "%REPORT_ROOT%"
+          mkdir "%REPORT_ROOT%\\gatling"
+          mkdir "%REPORT_ROOT%\\jmeter"
+          mkdir "%REPORT_ROOT%\\lighthouse"
+        """
       }
     }
 
-    stage('Run JMeter (Docker)') {
+    stage('Validate Selection') {
       steps {
-        sh '''
-          set -euo pipefail
+        script {
+          if (!params.RUN_GATLING && !params.RUN_JMETER && !params.RUN_LIGHTHOUSE) {
+            error('Select at least one tool to execute.')
+          }
+        }
+      }
+    }
 
-          out="${REPORT_ROOT}"
-          mkdir -p "$out"
+    stage('Gatling') {
+      when { expression { return params.RUN_GATLING } }
+      steps {
+        catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+          dir('gatling') {
+            bat """
+              if exist mvnw.cmd (
+                call mvnw.cmd -B gatling:test ^
+                  -Dgatling.simulationClass=simulations.testSimulation ^
+                  -DbaseURL="${params.HOST}" ^
+                  -Dusers="${params.USERS}" ^
+                  -Dramp="${params.RAMP}" ^
+                  -Dduration="${params.DURATION}"
+              ) else (
+                if exist mvnw (
+                  echo Found mvnw but on Windows expected mvnw.cmd. Please add mvnw.cmd.
+                  exit /b 2
+                ) else (
+                  echo mvnw.cmd not found in gatling\\
+                  exit /b 2
+                )
+              )
 
-          cid=$(docker create --user 0:0 --entrypoint "" justb4/jmeter:5.5 sleep 600)
+              set "DEST=..\\%REPORT_ROOT%\\gatling"
+              if exist "%DEST%" rmdir /s /q "%DEST%"
+              mkdir "%DEST%"
 
-          docker cp Jmeter_orig/Test.jmx "$cid:/Test.jmx"
-          docker cp Jmeter_orig/testdata "$cid:/testdata" || true
+              if exist "target\\gatling" (
+                xcopy /e /i /y "target\\gatling\\*" "%DEST%\\"
+              ) else (
+                echo target\\gatling not found
+                exit /b 3
+              )
+            """
+          }
+        }
+      }
+    }
 
-          docker start "$cid" >/dev/null
+    stage('JMeter') {
+      when { expression { return params.RUN_JMETER } }
+      steps {
+        catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+          bat """
+            set "OUT=%REPORT_ROOT%\\jmeter"
+            if exist "%OUT%" rmdir /s /q "%OUT%"
+            mkdir "%OUT%"
+            mkdir "%OUT%\\report"
 
-          set +e
-          docker exec "$cid" jmeter \
-            -n -t /Test.jmx \
-            -l /tmp/results.jtl \
-            -e -o /tmp/HtmlReport \
-            -JbaseURL="${HOST}" \
-            -Jusers="${USERS}" \
-            -Jramp="${RAMP}" \
-            -Jduration="${DURATION}"
-          rc=$?
-          set -e
+            rem IMPORTANT: run from workspace so relative paths in Test.jmx / testdata work
+            "%JMETER_HOME%\\bin\\jmeter.bat" ^
+              -n ^
+              -t "%WORKSPACE%\\Jmeter_orig\\Test.jmx" ^
+              -l "%WORKSPACE%\\%OUT%\\results.jtl" ^
+              -e -o "%WORKSPACE%\\%OUT%\\report" ^
+              -JbaseURL="${params.HOST}" ^
+              -Jusers="${params.USERS}" ^
+              -Jramp="${params.RAMP}" ^
+              -Jduration="${params.DURATION}"
+          """
+        }
+      }
+    }
 
-          docker cp "$cid:/tmp/results.jtl" "$out/results.jtl" || true
-          docker cp "$cid:/tmp/HtmlReport" "$out/HtmlReport" || true
-          docker logs "$cid" > "$out/container.log" || true
+    stage('Lighthouse') {
+      when { expression { return params.RUN_LIGHTHOUSE } }
+      steps {
+        catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+          dir('Lighthouse') {
+            bat """
+              npm ci
+              set "LH_BASE_URL=${params.HOST}"
+              node shopizer.js
 
-          docker rm -f "$cid" >/dev/null || true
+              set "DEST=..\\%REPORT_ROOT%\\lighthouse"
+              if exist "%DEST%" rmdir /s /q "%DEST%"
+              mkdir "%DEST%"
 
-          exit $rc
-        '''
+              if exist flow.report.html (
+                copy /y flow.report.html "%DEST%\\flow-%BUILD_NUMBER%.html"
+              ) else (
+                echo flow.report.html not found
+                exit /b 4
+              )
+            """
+          }
+        }
       }
     }
   }
@@ -65,6 +133,8 @@ pipeline {
   post {
     always {
       archiveArtifacts artifacts: 'reports/**/*', allowEmptyArchive: true
+    }
+    cleanup {
       cleanWs()
     }
   }
