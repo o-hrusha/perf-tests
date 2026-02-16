@@ -125,9 +125,9 @@ pipeline {
 
   post {
     always {
-      archiveArtifacts artifacts: "reports/build-${env.BUILD_NUMBER}/jmeter/report/index.html", allowEmptyArchive: false
-      archiveArtifacts artifacts: "reports/build-${env.BUILD_NUMBER}/jmeter/results.jtl", allowEmptyArchive: true
-      archiveArtifacts artifacts: "reports/build-${env.BUILD_NUMBER}/jmeter/jmeter.log", allowEmptyArchive: true
+       archiveArtifacts artifacts: "reports/build-${env.BUILD_NUMBER}/jmeter/report/**", allowEmptyArchive: false
+    archiveArtifacts artifacts: "reports/build-${env.BUILD_NUMBER}/jmeter/results.jtl", allowEmptyArchive: true
+    archiveArtifacts artifacts: "reports/build-${env.BUILD_NUMBER}/jmeter/jmeter.log", allowEmptyArchive: true
       archiveArtifacts artifacts: "reports/build-${env.BUILD_NUMBER}/lighthouse/*.html", allowEmptyArchive: true
       archiveArtifacts artifacts: "reports/build-${env.BUILD_NUMBER}/gatling/**", allowEmptyArchive: true
     }
