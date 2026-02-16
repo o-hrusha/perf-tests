@@ -50,6 +50,7 @@ pipeline {
       when { expression { return params.RUN_GATLING } }
       steps {
         catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+
           script {
             // Convert DURATION seconds -> steadyMinutes (ceil), minimum 1, sandbox-safe
             int durSec = (params.DURATION as Integer)
@@ -58,7 +59,6 @@ pipeline {
             env.GATLING_STEADY_MINUTES = steadyMin.toString()
           }
 
-          // IMPORTANT: your Gatling project is in repo root folder "gatling", not "tests/gatling"
           dir('gatling') {
             bat """
               @echo on
@@ -72,9 +72,21 @@ pipeline {
                 -DrampSeconds="${params.RAMP}" ^
                 -DsteadyMinutes="%GATLING_STEADY_MINUTES%"
 
-              if exist "%WORKSPACE%\\%REPORT_ROOT%\\gatling" rmdir /s /q "%WORKSPACE%\\%REPORT_ROOT%\\gatling"
-              mkdir "%WORKSPACE%\\%REPORT_ROOT%\\gatling"
-              if exist "target\\gatling" xcopy /E /I /Y "target\\gatling" "%WORKSPACE%\\%REPORT_ROOT%\\gatling"
+              rem Make a stable folder for HTML Publisher: reports\\build-XX\\gatling\\report
+              if exist "%WORKSPACE%\\%REPORT_ROOT%\\gatling\\report" rmdir /s /q "%WORKSPACE%\\%REPORT_ROOT%\\gatling\\report"
+              mkdir "%WORKSPACE%\\%REPORT_ROOT%\\gatling\\report"
+
+              rem Find latest Gatling report folder and copy its contents
+              for /f "delims=" %%D in ('dir /b /ad /o-d "target\\gatling" 2^>nul') do (
+                xcopy /E /I /Y "target\\gatling\\%%D\\*" "%WORKSPACE%\\%REPORT_ROOT%\\gatling\\report\\"
+                goto :done
+              )
+              :done
+
+              rem Also keep raw target/gatling archived if you want
+              if exist "%WORKSPACE%\\%REPORT_ROOT%\\gatling\\raw" rmdir /s /q "%WORKSPACE%\\%REPORT_ROOT%\\gatling\\raw"
+              mkdir "%WORKSPACE%\\%REPORT_ROOT%\\gatling\\raw"
+              if exist "target\\gatling" xcopy /E /I /Y "target\\gatling" "%WORKSPACE%\\%REPORT_ROOT%\\gatling\\raw"
             """
           }
         }
@@ -143,11 +155,32 @@ pipeline {
 
   post {
     always {
-      archiveArtifacts artifacts: "reports/build-${env.BUILD_NUMBER}/jmeter/report/**", allowEmptyArchive: true
+
+      // ✅ Publish JMeter HTML report in Jenkins UI
+      publishHTML(target: [
+        reportDir: "reports/build-${env.BUILD_NUMBER}/jmeter/report",
+        reportFiles: "index.html",
+        reportName: "JMeter HTML Report",
+        keepAll: true,
+        alwaysLinkToLastBuild: true,
+        allowMissing: true
+      ])
+
+      // ✅ Publish Gatling HTML report in Jenkins UI (stable path we created)
+      publishHTML(target: [
+        reportDir: "reports/build-${env.BUILD_NUMBER}/gatling/report",
+        reportFiles: "index.html",
+        reportName: "Gatling HTML Report",
+        keepAll: true,
+        alwaysLinkToLastBuild: true,
+        allowMissing: true
+      ])
+
+      // Keep archives too (optional but useful)
       archiveArtifacts artifacts: "reports/build-${env.BUILD_NUMBER}/jmeter/results.jtl", allowEmptyArchive: true
       archiveArtifacts artifacts: "reports/build-${env.BUILD_NUMBER}/jmeter/jmeter.log", allowEmptyArchive: true
-      archiveArtifacts artifacts: "reports/build-${env.BUILD_NUMBER}/lighthouse/*.html", allowEmptyArchive: true
       archiveArtifacts artifacts: "reports/build-${env.BUILD_NUMBER}/gatling/**", allowEmptyArchive: true
+      archiveArtifacts artifacts: "reports/build-${env.BUILD_NUMBER}/lighthouse/*.html", allowEmptyArchive: true
     }
   }
 }
