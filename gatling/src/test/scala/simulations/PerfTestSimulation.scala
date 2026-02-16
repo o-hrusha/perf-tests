@@ -40,23 +40,25 @@ import scala.concurrent.duration._
 
 class PerfTestSimulation extends Simulation {
 
-  private val targetUsers = System.getProperty("users", "30").toInt
-  private val rampSeconds = System.getProperty("rampSeconds", "180").toInt
-  private val steadyMinutes = System.getProperty("steadyMinutes", "27").toInt
+  private val targetUsers   = System.getProperty("users", "30").toInt
+  private val rampSeconds   = System.getProperty("rampSeconds", "180").toInt
+  private val steadySeconds = System.getProperty("steadySeconds", "1620").toInt // 27 min = 1620 sec
 
   setUp(
     scnDemo.inject(
       rampConcurrentUsers(0).to(targetUsers).during(rampSeconds.seconds),
-      constantConcurrentUsers(targetUsers).during(steadyMinutes.minutes)
+      constantConcurrentUsers(targetUsers).during(steadySeconds.seconds)
     )
   ).protocols(httpProtocol)
-   .maxDuration(30.minutes)
+   .maxDuration((rampSeconds + steadySeconds + 30).seconds) // +30s buffer
 }
 
 
 
 
- //mvn clean gatling:test -Dusers=30 -DrampSeconds=180 -DsteadyMinutes=27 -DaddChairPossibility="100.0" -DproceedToCartPossibility="100.0"
+
+ //mvn clean gatling:test -Dusers=30 -DrampSeconds=180 -DsteadySeconds=1620 -DaddChairPossibility="100.0" -DproceedToCartPossibility="100.0"
+
 
 
 
