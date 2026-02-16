@@ -139,7 +139,12 @@ pipeline {
 
               if exist "%WORKSPACE%\\%REPORT_ROOT%\\lighthouse" rmdir /s /q "%WORKSPACE%\\%REPORT_ROOT%\\lighthouse"
               mkdir "%WORKSPACE%\\%REPORT_ROOT%\\lighthouse"
-              if exist "flow.report.html" copy /Y "flow.report.html" "%WORKSPACE%\\%REPORT_ROOT%\\lighthouse\\flow-%BUILD_NUMBER%.html"
+
+              for %%F in (*.html) do (
+                copy /Y "%%F" "%WORKSPACE%\\%REPORT_ROOT%\\lighthouse\\flow-%BUILD_NUMBER%.html"
+                goto :done
+              )
+              :done
             """
           }
         }
