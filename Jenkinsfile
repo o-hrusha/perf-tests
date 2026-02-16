@@ -15,7 +15,6 @@ pipeline {
   environment {
     JMETER_HOME = 'C:\\apache-jmeter-5.5'
 
-    // Make Maven visible for Jenkins service user
     MAVEN_HOME = 'C:\\Users\\Oleksandr_Hrusha\\Desktop\\apache-maven-3.9.12'
     PATH = "${env.MAVEN_HOME}\\bin;${env.PATH}"
 
@@ -52,7 +51,6 @@ pipeline {
         catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
 
           script {
-            // Convert DURATION seconds -> steadyMinutes (ceil), minimum 1, sandbox-safe
             int durSec = (params.DURATION as Integer)
             int steadyMin = (durSec + 59) / 60
             if (steadyMin < 1) { steadyMin = 1 }
@@ -72,18 +70,15 @@ pipeline {
                 -DrampSeconds="${params.RAMP}" ^
                 -DsteadyMinutes="%GATLING_STEADY_MINUTES%"
 
-              rem Make a stable folder for HTML Publisher: reports\\build-XX\\gatling\\report
               if exist "%WORKSPACE%\\%REPORT_ROOT%\\gatling\\report" rmdir /s /q "%WORKSPACE%\\%REPORT_ROOT%\\gatling\\report"
               mkdir "%WORKSPACE%\\%REPORT_ROOT%\\gatling\\report"
 
-              rem Find latest Gatling report folder and copy its contents
               for /f "delims=" %%D in ('dir /b /ad /o-d "target\\gatling" 2^>nul') do (
                 xcopy /E /I /Y "target\\gatling\\%%D\\*" "%WORKSPACE%\\%REPORT_ROOT%\\gatling\\report\\"
                 goto :done
               )
               :done
 
-              rem Also keep raw target/gatling archived if you want
               if exist "%WORKSPACE%\\%REPORT_ROOT%\\gatling\\raw" rmdir /s /q "%WORKSPACE%\\%REPORT_ROOT%\\gatling\\raw"
               mkdir "%WORKSPACE%\\%REPORT_ROOT%\\gatling\\raw"
               if exist "target\\gatling" xcopy /E /I /Y "target\\gatling" "%WORKSPACE%\\%REPORT_ROOT%\\gatling\\raw"
@@ -102,7 +97,6 @@ pipeline {
 
             set "OUT=%REPORT_ROOT%\\jmeter"
 
-            rem normalize HOST: remove http:// or https://
             set "JM_HOST=${params.HOST}"
             set "JM_HOST=!JM_HOST:http://=!"
             set "JM_HOST=!JM_HOST:https://=!"
@@ -137,11 +131,11 @@ pipeline {
       when { expression { return params.RUN_LIGHTHOUSE } }
       steps {
         catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
-          dir('tests/lighthouse') {
+          dir('Lighthouse') {
             bat """
               call npm ci
               set "LH_BASE_URL=${params.HOST}"
-              call node shopizer.js
+              call node Placing-an-order-for-random-table-with-page-objects.js
 
               if exist "%WORKSPACE%\\%REPORT_ROOT%\\lighthouse" rmdir /s /q "%WORKSPACE%\\%REPORT_ROOT%\\lighthouse"
               mkdir "%WORKSPACE%\\%REPORT_ROOT%\\lighthouse"
@@ -156,7 +150,6 @@ pipeline {
   post {
     always {
 
-      // ✅ Publish JMeter HTML report in Jenkins UI
       publishHTML(target: [
         reportDir: "reports/build-${env.BUILD_NUMBER}/jmeter/report",
         reportFiles: "index.html",
@@ -166,7 +159,6 @@ pipeline {
         allowMissing: true
       ])
 
-      // ✅ Publish Gatling HTML report in Jenkins UI (stable path we created)
       publishHTML(target: [
         reportDir: "reports/build-${env.BUILD_NUMBER}/gatling/report",
         reportFiles: "index.html",
@@ -176,7 +168,6 @@ pipeline {
         allowMissing: true
       ])
 
-      // Keep archives too (optional but useful)
       archiveArtifacts artifacts: "reports/build-${env.BUILD_NUMBER}/jmeter/results.jtl", allowEmptyArchive: true
       archiveArtifacts artifacts: "reports/build-${env.BUILD_NUMBER}/jmeter/jmeter.log", allowEmptyArchive: true
       archiveArtifacts artifacts: "reports/build-${env.BUILD_NUMBER}/gatling/**", allowEmptyArchive: true
