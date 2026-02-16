@@ -152,31 +152,41 @@ pipeline {
     }
   }
 
-  post {
-    always {
+post {
+  always {
 
-      publishHTML(target: [
-        reportDir: "reports/build-${env.BUILD_NUMBER}/jmeter/report",
-        reportFiles: "index.html",
-        reportName: "JMeter HTML Report",
-        keepAll: true,
-        alwaysLinkToLastBuild: true,
-        allowMissing: true
-      ])
+    publishHTML(target: [
+      reportDir: "reports/build-${env.BUILD_NUMBER}/jmeter/report",
+      reportFiles: "index.html",
+      reportName: "JMeter HTML Report",
+      keepAll: true,
+      alwaysLinkToLastBuild: true,
+      allowMissing: true
+    ])
 
-      publishHTML(target: [
-        reportDir: "reports/build-${env.BUILD_NUMBER}/gatling/report",
-        reportFiles: "index.html",
-        reportName: "Gatling HTML Report",
-        keepAll: true,
-        alwaysLinkToLastBuild: true,
-        allowMissing: true
-      ])
+    publishHTML(target: [
+      reportDir: "reports/build-${env.BUILD_NUMBER}/gatling/report",
+      reportFiles: "index.html",
+      reportName: "Gatling HTML Report",
+      keepAll: true,
+      alwaysLinkToLastBuild: true,
+      allowMissing: true
+    ])
 
-      archiveArtifacts artifacts: "reports/build-${env.BUILD_NUMBER}/jmeter/results.jtl", allowEmptyArchive: true
-      archiveArtifacts artifacts: "reports/build-${env.BUILD_NUMBER}/jmeter/jmeter.log", allowEmptyArchive: true
-      archiveArtifacts artifacts: "reports/build-${env.BUILD_NUMBER}/gatling/**", allowEmptyArchive: true
-      archiveArtifacts artifacts: "reports/build-${env.BUILD_NUMBER}/lighthouse/*.html", allowEmptyArchive: true
-    }
+    // ✅ Lighthouse published like JMeter/Gatling (left menu link)
+    publishHTML(target: [
+      reportDir: "reports/build-${env.BUILD_NUMBER}/lighthouse",
+      reportFiles: "flow-${env.BUILD_NUMBER}.html",
+      reportName: "Lighthouse HTML Report",
+      keepAll: true,
+      alwaysLinkToLastBuild: true,
+      allowMissing: true
+    ])
+
+    archiveArtifacts artifacts: "reports/build-${env.BUILD_NUMBER}/jmeter/results.jtl", allowEmptyArchive: true
+    archiveArtifacts artifacts: "reports/build-${env.BUILD_NUMBER}/jmeter/jmeter.log", allowEmptyArchive: true
+    archiveArtifacts artifacts: "reports/build-${env.BUILD_NUMBER}/gatling/**", allowEmptyArchive: true
+    archiveArtifacts artifacts: "reports/build-${env.BUILD_NUMBER}/lighthouse/*.html", allowEmptyArchive: true
   }
+}
 }
