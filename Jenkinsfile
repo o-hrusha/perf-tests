@@ -51,9 +51,10 @@ pipeline {
       steps {
         catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
           script {
-            // Convert DURATION seconds -> steadyMinutes (ceil), minimum 1
+            // Convert DURATION seconds -> steadyMinutes (ceil), minimum 1, WITHOUT Math.ceil (sandbox-safe)
             int durSec = (params.DURATION as Integer)
-            int steadyMin = Math.max(1, (int) Math.ceil(durSec / 60.0))
+            int steadyMin = (durSec + 59) / 60
+            if (steadyMin < 1) { steadyMin = 1 }
             env.GATLING_STEADY_MINUTES = steadyMin.toString()
           }
 
