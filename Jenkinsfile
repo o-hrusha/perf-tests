@@ -51,7 +51,7 @@ pipeline {
       steps {
         catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
           script {
-            // Convert DURATION seconds -> steadyMinutes (ceil), minimum 1, WITHOUT Math.ceil (sandbox-safe)
+            // Convert DURATION seconds -> steadyMinutes (ceil), minimum 1 (sandbox-safe)
             int durSec = (params.DURATION as Integer)
             int steadyMin = (durSec + 59) / 60
             if (steadyMin < 1) { steadyMin = 1 }
@@ -62,9 +62,9 @@ pipeline {
             bat """
               @echo on
               where mvn
-              mvn -v
+              call mvn -v
 
-              mvn -B clean gatling:test -Dgatling.simulationClass=simulations.PerfTestSimulation -DbaseURL="${params.HOST}" -Dusers="${params.USERS}" -DrampSeconds="${params.RAMP}" -DsteadyMinutes="%GATLING_STEADY_MINUTES%"
+              call mvn -B clean gatling:test -Dgatling.simulationClass=simulations.PerfTestSimulation -DbaseURL="${params.HOST}" -Dusers="${params.USERS}" -DrampSeconds="${params.RAMP}" -DsteadyMinutes="%GATLING_STEADY_MINUTES%"
 
               if exist "%WORKSPACE%\\%REPORT_ROOT%\\gatling" rmdir /s /q "%WORKSPACE%\\%REPORT_ROOT%\\gatling"
               mkdir "%WORKSPACE%\\%REPORT_ROOT%\\gatling"
