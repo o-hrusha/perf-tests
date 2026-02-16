@@ -51,20 +51,26 @@ pipeline {
       steps {
         catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
           script {
-            // Convert DURATION seconds -> steadyMinutes (ceil), minimum 1 (sandbox-safe)
+            // Convert DURATION seconds -> steadyMinutes (ceil), minimum 1, sandbox-safe
             int durSec = (params.DURATION as Integer)
             int steadyMin = (durSec + 59) / 60
             if (steadyMin < 1) { steadyMin = 1 }
             env.GATLING_STEADY_MINUTES = steadyMin.toString()
           }
 
-          dir('tests/gatling') {
+          // IMPORTANT: your Gatling project is in repo root folder "gatling", not "tests/gatling"
+          dir('gatling') {
             bat """
               @echo on
               where mvn
               call mvn -v
 
-              call mvn -B clean gatling:test -Dgatling.simulationClass=simulations.PerfTestSimulation -DbaseURL="${params.HOST}" -Dusers="${params.USERS}" -DrampSeconds="${params.RAMP}" -DsteadyMinutes="%GATLING_STEADY_MINUTES%"
+              call mvn -B clean gatling:test ^
+                -Dgatling.simulationClass=simulations.PerfTestSimulation ^
+                -DbaseURL="${params.HOST}" ^
+                -Dusers="${params.USERS}" ^
+                -DrampSeconds="${params.RAMP}" ^
+                -DsteadyMinutes="%GATLING_STEADY_MINUTES%"
 
               if exist "%WORKSPACE%\\%REPORT_ROOT%\\gatling" rmdir /s /q "%WORKSPACE%\\%REPORT_ROOT%\\gatling"
               mkdir "%WORKSPACE%\\%REPORT_ROOT%\\gatling"
