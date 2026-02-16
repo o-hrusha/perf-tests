@@ -14,11 +14,12 @@ pipeline {
 
   environment {
     JMETER_HOME = 'C:\\apache-jmeter-5.5'
-    REPORT_ROOT = "reports\\build-${BUILD_NUMBER}"
 
     // Make Maven visible for Jenkins service user
     MAVEN_HOME = 'C:\\Users\\Oleksandr_Hrusha\\Desktop\\apache-maven-3.9.12'
     PATH = "${env.MAVEN_HOME}\\bin;${env.PATH}"
+
+    REPORT_ROOT = "reports\\build-${BUILD_NUMBER}"
   }
 
   stages {
@@ -132,7 +133,7 @@ pipeline {
 
   post {
     always {
-      archiveArtifacts artifacts: "reports/build-${env.BUILD_NUMBER}/jmeter/report/**", allowEmptyArchive: false
+      archiveArtifacts artifacts: "reports/build-${env.BUILD_NUMBER}/jmeter/report/**", allowEmptyArchive: true
       archiveArtifacts artifacts: "reports/build-${env.BUILD_NUMBER}/jmeter/results.jtl", allowEmptyArchive: true
       archiveArtifacts artifacts: "reports/build-${env.BUILD_NUMBER}/jmeter/jmeter.log", allowEmptyArchive: true
       archiveArtifacts artifacts: "reports/build-${env.BUILD_NUMBER}/lighthouse/*.html", allowEmptyArchive: true
